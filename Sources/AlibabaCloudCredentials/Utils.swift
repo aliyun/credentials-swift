@@ -8,7 +8,7 @@ import PromiseKit
 import Alamofire
 import AwaitKit
 
-func dateFormatter(format: String = "yyyy-MM-dd'T'HH:mm:ssZ") -> DateFormatter {
+func dateFormatter(format: String = "yyyy-MM-dd'T'HH:mm:ss'Z'") -> DateFormatter {
     let formatter = DateFormatter()
     formatter.locale = Locale(identifier: "en_US")
     formatter.timeZone = TimeZone(identifier: "GMT")
@@ -20,7 +20,7 @@ func hasExpired(expiration: TimeInterval) -> Bool {
     Double(expiration) - Double(Date().timeIntervalSince1970) <= 180
 }
 
-func composeUrl(host: String, params: [String: Any], pathname: String = "/", schema: String = "https", port: String = "80") -> String {
+func composeUrl(host: String, params: [String: Any], pathname: String = "", schema: String = "https", port: String = "80") -> String {
     var url: String = ""
     url = url + schema.lowercased() + "://" + host
     if port != "80" {
@@ -28,14 +28,16 @@ func composeUrl(host: String, params: [String: Any], pathname: String = "/", sch
     }
     url = url + pathname
     if params.count > 0 {
+        let queryString = httpQueryString(query: params)
         if url.contains("?") {
             if url.last != "&" {
-                url = url + "&"
+                url = url + "&" + queryString
+            } else {
+                url = url + queryString
             }
-        } else {
-            url = url + "?"
+        } else if queryString != "" {
+            url = url + "?" + queryString
         }
-        url = url + httpQueryString(query: params)
     }
     return url
 }
@@ -83,7 +85,8 @@ func stsRequest(accessKeySecret: String, connectTimeout: Double, readTimeout: Do
     config.timeoutIntervalForRequest = connectTimeout
     config.timeoutIntervalForResource = readTimeout
     let sessionManage: SessionManager = Alamofire.SessionManager(configuration: config)
-    let promise = sessionManage.request(url, method: HTTPMethod.get).response()
+    let queue = DispatchQueue(label: "AlibabaCloud.Credentials.STS.request.queue")
+    let promise = sessionManage.request(url, method: HTTPMethod.get).response(queue: queue)
     let response: DefaultDataResponse = try! await(promise)
     return response
 }

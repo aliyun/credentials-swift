@@ -4,8 +4,8 @@ import Alamofire
 import AwaitKit
 
 enum CredentialException: Error {
-    case UnsupportedCredentialType
-    case EmptyOrNil
+    case UnsupportedCredentialType(String)
+    case EmptyOrNil(String)
     case RequestEcsRamError
     case InvalidData(String)
     case RequestStsError([String: AnyObject])
@@ -25,11 +25,11 @@ public protocol CredentialProtocol {
     var credentialType: CredentialType { get }
 }
 
-let DateFormat: String = "yyyy-MM-dd'T'HH:mm:ssZ"
+let DateFormat: String = "yyyy-MM-dd'T'HH:mm:ss'Z'"
 
 open class CredentialsProvider {
     var credential: CredentialProtocol?
-    let config: Configuration
+    var config: Configuration
     private static var lastResult: DefaultDataResponse? = nil
     public static var error: DefaultDataResponse? {
         get {
@@ -44,28 +44,44 @@ open class CredentialsProvider {
         self.config = config
     }
 
-    public func getCredential(credentialType: CredentialType? = nil) -> CredentialProtocol {
+    public func getCredential(credentialType: CredentialType? = nil) -> CredentialProtocol? {
         let credentialsType: CredentialType = credentialType ?? self.config.type
-        switch (credentialsType) {
-        case .AccessKey:
-            self.config.type = CredentialType.AccessKey
-            return try! AccessKeyCredential(config: self.config)
-        case .BearerToken:
-            self.config.type = CredentialType.BearerToken
-            return BearerTokenCredential(config: self.config)
-        case .EcsRamRole:
-            self.config.type = CredentialType.EcsRamRole
-            return EcsRamRoleCredential(config: self.config)
-        case .RamRoleArn:
-            self.config.type = CredentialType.EcsRamRole
-            return RamRoleArnCredential(config: self.config)
-        case .RsaKeyPair:
-            self.config.type = CredentialType.EcsRamRole
-            return try! RsaKeyPairCredential(config: self.config)
-        case .STS:
-            self.config.type = CredentialType.STS
-            return StsCredential(config: self.config)
+
+        do {
+            switch (credentialsType) {
+            case .AccessKey:
+                self.config.type = CredentialType.AccessKey
+                return try AccessKeyCredential(config: self.config)
+            case .BearerToken:
+                self.config.type = CredentialType.BearerToken
+                return BearerTokenCredential(config: self.config)
+            case .EcsRamRole:
+                self.config.type = CredentialType.EcsRamRole
+                return EcsRamRoleCredential(config: self.config)
+            case .RamRoleArn:
+                self.config.type = CredentialType.EcsRamRole
+                return RamRoleArnCredential(config: self.config)
+            case .RsaKeyPair:
+                self.config.type = CredentialType.EcsRamRole
+                return try RsaKeyPairCredential(config: self.config)
+            case .STS:
+                self.config.type = CredentialType.STS
+                return StsCredential(config: self.config)
+            }
+        } catch CredentialException.UnsupportedCredentialType(let type) {
+            print("UnsupportedCredentialType : \(type) ")
+        } catch CredentialException.EmptyOrNil(let msg) {
+            print(msg)
+        } catch CredentialException.RequestEcsRamError {
+            print("Request EcsRam Server Error")
+        } catch CredentialException.RequestStsError(let result) {
+            print("request Sts server error : ", result)
+        } catch CredentialException.InvalidData(let msg) {
+            print(msg)
+        } catch {
+            print("Unexpected error: \(error).")
         }
+        return nil
     }
 }
 
@@ -87,7 +103,7 @@ open class AccessKeyCredential: CredentialProtocol {
     public init(config: Configuration) throws {
         self.config = config
         if (self.config.accessKeyId).isEmpty || (self.config.accessKeySecret).isEmpty {
-            throw CredentialException.EmptyOrNil
+            throw CredentialException.EmptyOrNil("accessKeyId or accessKeySecret cannot be empty.")
         }
     }
 }
@@ -160,12 +176,18 @@ open class EcsRamRoleCredential: CredentialProtocol {
             config.timeoutIntervalForRequest = self.config.connectTimeout
             config.timeoutIntervalForResource = self.config.readTimeout
             let url: String = "http://" + EcsRamRoleCredential.metadataServiceHost + EcsRamRoleCredential.urlInEcsMetaData
-            let promise = Alamofire.SessionManager(configuration: config).request(url, method: HTTPMethod.get).response()
-            let response: DefaultDataResponse = try! await(promise)
-            let content = String(data: response.data!, encoding: .utf8)
-            if content != nil && content != "" {
-                EcsRamRoleCredential.roleName = content ?? ""
-                self.refreshCredential()
+            let queue = DispatchQueue(label: "AlibabaCloud.Credentials.EcsRamRoleCredential.queue")
+            let session: SessionManager = Alamofire.SessionManager(configuration: config)
+            let promise = session.request(url, method: HTTPMethod.get).response(queue: queue)
+            do {
+                let response: DefaultDataResponse = try await(promise)
+                let content = String(data: response.data!, encoding: .utf8)
+                if content != nil && content != "" {
+                    EcsRamRoleCredential.roleName = content ?? ""
+                    self.refreshCredential()
+                }
+            } catch {
+                print("EcsRamRoleCredential : get role name error")
             }
         } else {
             self.refreshCredential()
@@ -178,18 +200,27 @@ open class EcsRamRoleCredential: CredentialProtocol {
         config.timeoutIntervalForResource = self.config.readTimeout
         let url: String = "http://" + EcsRamRoleCredential.metadataServiceHost + EcsRamRoleCredential.urlInEcsMetaData
         let session: SessionManager = Alamofire.SessionManager(configuration: config)
-        let promise = session.request(url, method: HTTPMethod.get).response()
-        let response = try! await(promise)
-        let content = String(data: response.data!, encoding: .utf8) ?? "{}"
-        let result: [String: AnyObject] = content.jsonDecode()
-        let code: String = result["Code"] as? String ?? ""
-        if code == "Success" {
-            self.config.accessKeyId = result["AccessKeyId"] as! String
-            self.config.accessKeySecret = result["AccessKeySecret"] as! String
-            let expiration: String = result["Expiration"] as! String
-            self.config.expiration = expiration.convertToDate(format: DateFormat).toTimestamp()
-            let token: String = result["SecurityToken"] as! String
-            self.config.securityToken = token
+        let queue = DispatchQueue(label: "AlibabaCloud.Credentials.EcsRamRoleCredential.queue")
+        let promise = session.request(url, method: HTTPMethod.get).response(queue: queue)
+        do {
+            let response = try await(promise)
+            let content = String(data: response.data!, encoding: .utf8) ?? "{}"
+            let result: [String: AnyObject] = content.jsonDecode()
+            let code: String = result["Code"] as? String ?? ""
+            if code == "Success" {
+                self.config.accessKeyId = result["AccessKeyId"] as! String
+                self.config.accessKeySecret = result["AccessKeySecret"] as! String
+                let expiration: String = result["Expiration"] as! String
+                self.config.expiration = expiration.convertToDate(format: DateFormat).toTimestamp()
+                let token: String = result["SecurityToken"] as! String
+                self.config.securityToken = token
+            } else {
+                CredentialsProvider.error = response
+                print("EcsRamRoleCredential refresh error!")
+                print(result)
+            }
+        } catch {
+            print("EcsRamRoleCredential : refresh error")
         }
     }
 
@@ -216,28 +247,28 @@ open class RamRoleArnCredential: CredentialProtocol {
 
     public var accessKeyId: String {
         get {
-            try! refresh()
+            refresh()
             return self.config.accessKeyId
         }
     }
 
     public var accessKeySecret: String {
         get {
-            try! refresh()
+            refresh()
             return self.config.accessKeySecret
         }
     }
 
     public var securityToken: String {
         get {
-            try! refresh()
+            refresh()
             return self.config.securityToken
         }
     }
 
     public var expiration: TimeInterval {
         get {
-            try! refresh()
+            refresh()
             return self.config.expiration
         }
         set(value) {
@@ -249,7 +280,7 @@ open class RamRoleArnCredential: CredentialProtocol {
         self.config = config
     }
 
-    private func refresh() throws {
+    private func refresh() {
         if (hasExpired(expiration: self.config.expiration)) {
             var params: [String: String] = [String: String]()
             params["Action"] = "AssumeRole"
@@ -262,7 +293,7 @@ open class RamRoleArnCredential: CredentialProtocol {
             params["RoleSessionName"] = RamRoleArnCredential.roleSessionName;
             params["SignatureVersion"] = "1.0"
             params["SignatureMethod"] = "HMAC-SHA1"
-            params["Timestamp"] = Date().toString(format: "yyyy-MM-dd'T'HH:mm:ssZ")
+            params["Timestamp"] = Date().toString(format: DateFormat)
             params["SignatureNonce"] = uuid()
             if !self.policy.isEmpty {
                 params["Policy"] = self.policy
@@ -283,7 +314,8 @@ open class RamRoleArnCredential: CredentialProtocol {
                 self.config.securityToken = credentials["SecurityToken"] ?? ""
             } else {
                 CredentialsProvider.error = response
-                throw CredentialException.RequestStsError(result)
+                print("RamRoleArnCredential refresh error!")
+                print(result)
             }
         }
     }
@@ -297,33 +329,21 @@ open class RsaKeyPairCredential: CredentialProtocol {
 
     public var publicKeyId: String {
         get {
-            do {
-                try refresh()
-            } catch {
-                print("RsaKeyPairCredential refresh error!")
-            }
+            refresh()
             return self.config.publicKeyId
         }
     }
 
     public var privateKeySecret: String {
         get {
-            do {
-                try refresh()
-            } catch {
-                print("RsaKeyPairCredential refresh error!")
-            }
+            refresh()
             return self.config.privateKeySecret
         }
     }
 
     public var expiration: TimeInterval {
         get {
-            do {
-                try refresh()
-            } catch {
-                print("RsaKeyPairCredential refresh error!")
-            }
+            refresh()
             return self.config.expiration
         }
     }
@@ -337,7 +357,7 @@ open class RsaKeyPairCredential: CredentialProtocol {
         }
     }
 
-    public func refresh() throws {
+    public func refresh() {
         if (hasExpired(expiration: self.config.expiration)) {
             var params: [String: String] = [String: String]()
             params["Action"] = "GenerateSessionAccessKey"
@@ -348,7 +368,7 @@ open class RsaKeyPairCredential: CredentialProtocol {
             params["RegionId"] = RsaKeyPairCredential.regionId;
             params["SignatureVersion"] = "1.0"
             params["SignatureMethod"] = "HMAC-SHA1"
-            params["Timestamp"] = Date().toString(format: "yyyy-MM-dd'T'HH:mm:ssZ")
+            params["Timestamp"] = Date().toString(format: DateFormat)
             params["SignatureNonce"] = uuid()
 
             let response: DefaultDataResponse = stsRequest(
@@ -367,7 +387,8 @@ open class RsaKeyPairCredential: CredentialProtocol {
                 self.config.securityToken = credentials["SecurityToken"] ?? ""
             } else {
                 CredentialsProvider.error = response
-                throw CredentialException.RequestStsError(result)
+                print("RsaKeyPairCredential refresh error!")
+                print(result)
             }
         }
     }
