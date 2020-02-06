@@ -58,7 +58,7 @@ extension String {
 }
 
 extension Date {
-    public func toString(format: String = "yyyy-MM-dd'T'HH:mm:ssZ") -> String {
+    public func toString(format: String = "yyyy-MM-dd'T'HH:mm:ss'Z'") -> String {
         dateFormatter(format: format).string(from: self)
     }
 

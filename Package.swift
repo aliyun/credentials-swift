@@ -4,23 +4,24 @@
 import PackageDescription
 
 let package = Package(
-    name: "AlibabaCloudCredentials",
-    products: [
-        .library(
-            name: "AlibabaCloudCredentials",
-            targets: ["AlibabaCloudCredentials"])
-    ],
-    dependencies: [
-        // Dependencies declare other packages that this package depends on.
-        .package(url: "https://github.com/aliyun/AlamofirePromiseKit.git", from: "1.0.0"),
-        .package(url: "https://github.com/krzyzanowskim/CryptoSwift.git", from: "1.3.0")
-    ],
-    targets: [
-        .target(
-            name: "AlibabaCloudCredentials",
-            dependencies: ["AlamofirePromiseKit", "CryptoSwift"]),
-        .testTarget(
-            name: "AlibabaCloudCredentialsTests",
-            dependencies: ["AlibabaCloudCredentials", "AlamofirePromiseKit", "CryptoSwift"])
-    ]
+        name: "AlibabaCloudCredentials",
+        products: [
+            .library(
+                    name: "AlibabaCloudCredentials",
+                    targets: ["AlibabaCloudCredentials"])
+        ],
+        dependencies: [
+            // Dependencies declare other packages that this package depends on.
+            .package(url: "https://github.com/aliyun/AlamofirePromiseKit.git", from: "1.0.0"),
+            .package(url: "https://github.com/krzyzanowskim/CryptoSwift.git", from: "1.3.0"),
+            .package(url: "https://github.com/birdrides/mockingbird.git", from: "0.9.0")
+        ],
+        targets: [
+            .target(
+                    name: "AlibabaCloudCredentials",
+                    dependencies: ["AlamofirePromiseKit", "CryptoSwift"]),
+            .testTarget(
+                    name: "AlibabaCloudCredentialsTests",
+                    dependencies: ["AlibabaCloudCredentials", "AlamofirePromiseKit", "CryptoSwift", "Mockingbird"])
+        ]
 )
