@@ -4,6 +4,8 @@
 
 ## Alibaba Cloud Credentials for Swift(5.1)
 
+[![Cocoapod Version](https://img.shields.io/cocoapods/v/AlibabaCloudCredentials)](https://cocoapods.org/pods/AlibabaCloudCredentials)
+
 ## 依赖
 
 - iOS 13.3+ / macOS 10.15+
