@@ -57,7 +57,7 @@ In addition, you also need to add `"AlibabaCloudCredentials"` to the `dependenci
 Detailed changes for each release are documented in the [release notes](./ChangeLog.md).
 
 ## References
-* [OpenAPI Explorer](https://api.aliyun.com/)
+* [OpenAPI Developer Portal](https://next.api.aliyun.com/)
 * [Latest Release](https://github.com/aliyun/credential-swift)
 
 ## License
