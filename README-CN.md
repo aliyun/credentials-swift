@@ -57,7 +57,7 @@ dependencies: [
 每个版本的详细更改记录在[发行说明](./ChangeLog.md)中。
 
 ## 相关
-* [OpenAPI Explorer](https://api.aliyun.com/)
+* [OpenAPI 开发者门户](https://next.api.aliyun.com/)
 * [最新源码](https://github.com/aliyun/credential-swift)
 
 ## 许可证
