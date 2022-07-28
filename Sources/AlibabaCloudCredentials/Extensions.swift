@@ -1,10 +1,5 @@
-//
-// Created by Axios on 2020/1/15.
-//
-
 import Foundation
 import Alamofire
-import PromiseKit
 import CryptoSwift
 
 extension Int {
@@ -40,7 +35,7 @@ extension String {
         return encoded ?? ""
     }
 
-    public func convertToDate(format: String) -> Date {
+    public func convertToDate(format: String = "yyyy-MM-dd'T'HH:mm:ss'Z'") -> Date {
         dateFormatter(format: format).date(from: self)!
     }
 

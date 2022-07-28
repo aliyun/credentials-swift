@@ -2,7 +2,7 @@ English | [简体中文](./README-CN.md)
 
 ![](https://aliyunsdk-pages.alicdn.com/icons/AlibabaCloud.svg)
 
-## Alibaba Cloud Credentials for Swift(5.1)
+## Alibaba Cloud Credentials for Swift(5.6)
 
 [![Cocoapod Version](https://img.shields.io/cocoapods/v/AlibabaCloudCredentials)](https://cocoapods.org/pods/AlibabaCloudCredentials)
 
@@ -10,7 +10,7 @@ English | [简体中文](./README-CN.md)
 
 - iOS 13.3+ / macOS 10.15+
 - Xcode 11.3+
-- Swift 5.1
+- Swift 5.6
 
 ## Installation
 
@@ -19,7 +19,7 @@ English | [简体中文](./README-CN.md)
 [CocoaPods](https://cocoapods.org) is a dependency manager for Cocoa projects. For usage and installation instructions, visit their website. To integrate `AlibabaCloudCredentials` into your Xcode project using CocoaPods, specify it in your `Podfile`:
 
 ```ruby
-pod 'AlibabaCloudCredentials', '~> 0.1.0'
+pod 'AlibabaCloudCredentials', '~> 1.0.0'
 ```
 
 ### Carthage
@@ -27,7 +27,7 @@ pod 'AlibabaCloudCredentials', '~> 0.1.0'
 To integrate `AlibabaCloudCredentials` into your Xcode project using [Carthage](https://github.com/Carthage/Carthage), specify it in your `Cartfile`:
 
 ```ogdl
-github "aliyun/credential-swift" "0.1.0"
+github "aliyun/credentials-swift" "1.0.0"
 ```
 
 ### Swift Package Manager
@@ -36,7 +36,7 @@ To integrate `AlibabaCloudCredentials` into your Xcode project using [Swift Pack
 
 ```swift
 dependencies: [
-    .package(url: "https://github.com/aliyun/credential-swift.git", from: "0.1.0")
+    .package(url: "https://github.com/aliyun/credential-swift.git", from: "1.0.0")
 ]
 ```
 

@@ -1,17 +1,9 @@
-//
-// Created by Axios on 2020/1/13.
-//
-
 import Foundation
-import CryptoSwift
-import PromiseKit
-import Alamofire
-import AwaitKit
 
 func dateFormatter(format: String = "yyyy-MM-dd'T'HH:mm:ss'Z'") -> DateFormatter {
     let formatter = DateFormatter()
     formatter.locale = Locale(identifier: "en_US")
-    formatter.timeZone = TimeZone(identifier: "GMT")
+    formatter.timeZone = TimeZone(identifier: "UTC")
     formatter.dateFormat = format
     return formatter
 }
@@ -76,17 +68,34 @@ func uuid() -> String {
     return (String.randomString(len: 10) + timestampStr + UUID().uuidString).md5()
 }
 
-func stsRequest(accessKeySecret: String, connectTimeout: Double, readTimeout: Double, query: [String: String]) -> DefaultDataResponse {
-    var params: [String: String] = query
-    var strToSign: String = stringToSign(method: "GET", query: params)
-    params["Signature"] = strToSign.generateSignature(secret: accessKeySecret + "&")
-    let url: String = composeUrl(host: "sts.aliyuncs.com", params: params)
-    let config: URLSessionConfiguration = URLSessionConfiguration.default
-    config.timeoutIntervalForRequest = connectTimeout
-    config.timeoutIntervalForResource = readTimeout
-    let sessionManage: SessionManager = Alamofire.SessionManager(configuration: config)
-    let queue = DispatchQueue(label: "AlibabaCloud.Credentials.STS.request.queue")
-    let promise = sessionManage.request(url, method: HTTPMethod.get).response(queue: queue)
-    let response: DefaultDataResponse = try! await(promise)
-    return response
+func osName() -> String {
+    let osNameVersion: String = {
+        let version = ProcessInfo.processInfo.operatingSystemVersion
+        let versionString = "\(version.majorVersion).\(version.minorVersion).\(version.patchVersion)"
+
+        let osName: String = {
+            #if os(iOS)
+            return "iOS"
+            #elseif os(watchOS)
+            return "watchOS"
+            #elseif os(tvOS)
+            return "tvOS"
+            #elseif os(macOS)
+            return "OSX"
+            #elseif os(Linux)
+            return "Linux"
+            #else
+            return "Unknown"
+            #endif
+        }()
+
+        return "\(osName)/\(versionString)"
+    }()
+    return osNameVersion
+}
+
+func getDefaultUserAgent() -> String {
+    var defaultUserAgent: String = "AlibabaCloud"
+    defaultUserAgent += " " + osName() + " Swift" + " TeaDSL/1"
+    return defaultUserAgent
 }
