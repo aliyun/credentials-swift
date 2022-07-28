@@ -2,7 +2,7 @@
 
 ![](https://aliyunsdk-pages.alicdn.com/icons/AlibabaCloud.svg)
 
-## Alibaba Cloud Credentials for Swift(5.1)
+## Alibaba Cloud Credentials for Swift(5.6)
 
 [![Cocoapod Version](https://img.shields.io/cocoapods/v/AlibabaCloudCredentials)](https://cocoapods.org/pods/AlibabaCloudCredentials)
 
@@ -10,7 +10,7 @@
 
 - iOS 13.3+ / macOS 10.15+
 - Xcode 11.3+
-- Swift 5.1
+- Swift 5.6
 
 ## 安装
 
@@ -19,7 +19,7 @@
 [CocoaPods](https://cocoapods.org) 是 Cocoa 项目管理工具。请访问其官方网站获取关于 CocoaPods 的使用和安装说明。要使用 CocoaPods 将 `AlibabaCloudCredentials` 集成到你的 Xcode 项目中，需要在 `Podfile` 中定义以下内容:
 
 ```ruby
-pod 'AlibabaCloudCredentials', '~> 0.1.0'
+pod 'AlibabaCloudCredentials', '~> 1.0.0'
 ```
 
 ### Carthage
@@ -27,7 +27,7 @@ pod 'AlibabaCloudCredentials', '~> 0.1.0'
 要使用 [Carthage](https://github.com/Carthage/Carthage) 将 `AlibabaCloudCredentials` 集成到你的 Xcode 项目中，需要在 `Cartfile` 中定义以下内容:
 
 ```ogdl
-github "aliyun/credential-swift" "0.1.0"
+github "aliyun/credential-swift" "1.0.0"
 ```
 
 ### Swift 包管理工具
@@ -36,7 +36,7 @@ github "aliyun/credential-swift" "0.1.0"
 
 ```swift
 dependencies: [
-    .package(url: "https://github.com/aliyun/credential-swift.git", from: "0.1.0")
+    .package(url: "https://github.com/aliyun/credential-swift.git", from: "1.0.0")
 ]
 ```
 

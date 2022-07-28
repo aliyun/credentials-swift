@@ -1,10 +1,3 @@
-//
-//  File.swift
-//  
-//
-//  Created by Axios on 2020/1/7.
-//
-
 import Foundation
 
 open class Configuration {
