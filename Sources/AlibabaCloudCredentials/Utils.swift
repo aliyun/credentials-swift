@@ -65,7 +65,7 @@ func stringToSign(method: String, query: [String: Any]) -> String {
 func uuid() -> String {
     let timestamp: TimeInterval = Date().toTimestamp()
     let timestampStr: String = String(timestamp)
-    return (String.randomString(len: 10) + timestampStr + UUID().uuidString).md5()
+    return (timestampStr + UUID().uuidString).md5()
 }
 
 func osName() -> String {

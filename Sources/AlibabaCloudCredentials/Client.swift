@@ -48,21 +48,21 @@ open class Client {
     
     public func getAccessKeyId() async throws -> String {
         self.credential = try await getCredential()!
-        return self.credential?.getAccessKeyId?() ?? ""
+        return self.credential?.getAccessKeyId() ?? ""
     }
     
     public func getAccessKeySecret() async throws -> String {
         self.credential = try await getCredential()!
-        return self.credential?.getAccessKeySecret?() ?? ""
+        return self.credential?.getAccessKeySecret() ?? ""
     }
     
     public func getSecurityToken() async throws -> String {
         self.credential = try await getCredential()!
-        return self.credential?.getSecurityToken?() ?? ""
+        return self.credential?.getSecurityToken() ?? ""
     }
     
     public func getBearerToken() -> String {
-        return self.credential?.getBearerToken?() ?? ""
+        return self.credential?.getBearerToken() ?? ""
     }
     
     public func getType() -> String {

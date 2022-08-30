@@ -18,17 +18,25 @@ public enum CredentialType: String {
     case URLSTS = "credentials_uri"
 }
 
-@objc public protocol Credential {
-    var type: String { get set }
-    @objc optional func getAccessKeyId() -> String
-    @objc optional func getAccessKeySecret() -> String
-    @objc optional func getSecurityToken() -> String
-    @objc optional func getBearerToken() -> String
-    func getType() -> String
+open class Credential {
+    open func getAccessKeyId() -> String {
+        return ""
+    }
+    open func getAccessKeySecret() -> String {
+        return ""
+    }
+    open func getSecurityToken() -> String {
+        return ""
+    }
+    open func getBearerToken() -> String {
+        return ""
+    }
+    open func getType() -> String {
+        return ""
+    }
 }
 
 public class AccessKeyCredential: Credential {
-    public var type: String
     private var accessKeyId: String
     private var accessKeySecret: String
 
@@ -38,24 +46,22 @@ public class AccessKeyCredential: Credential {
         if (self.accessKeyId).isEmpty || (self.accessKeySecret).isEmpty {
             throw CredentialException.EmptyOrNil("accessKeyId or accessKeySecret cannot be empty.")
         }
-        self.type = CredentialType.AccessKey.rawValue
     }
     
-    public func getAccessKeyId() -> String {
+    public override func getAccessKeyId() -> String {
         return self.accessKeyId
     }
     
-    public func getAccessKeySecret() -> String {
+    public override func getAccessKeySecret() -> String {
         return self.accessKeySecret
     }
     
-    public func getType() -> String {
-        return self.type
+    public override func getType() -> String {
+        return CredentialType.AccessKey.rawValue
     }
 }
 
 public class BearerTokenCredential: Credential {
-    public var type: String
     private var bearerToken: String
 
     public init(_ bearerToken: String) throws {
@@ -63,20 +69,18 @@ public class BearerTokenCredential: Credential {
         if (self.bearerToken).isEmpty {
             throw CredentialException.EmptyOrNil("bearerToken cannot be empty.")
         }
-        self.type = CredentialType.BearerToken.rawValue
     }
     
-    public func getBearerToken() -> String {
+    public override func getBearerToken() -> String {
         return self.bearerToken
     }
     
-    public func getType() -> String {
-        return self.type
+    public override func getType() -> String {
+        return CredentialType.BearerToken.rawValue
     }
 }
 
 public class StsCredential: Credential {
-    public var type: String
     private var accessKeyId: String
     private var accessKeySecret: String
     private var securityToken: String
@@ -88,22 +92,21 @@ public class StsCredential: Credential {
         if (self.accessKeyId).isEmpty || (self.accessKeySecret).isEmpty || (self.securityToken).isEmpty {
             throw CredentialException.EmptyOrNil("accessKeyId or accessKeySecret cannot be empty.")
         }
-        self.type = CredentialType.STS.rawValue
     }
     
-    public func getAccessKeyId() -> String {
+    public override func getAccessKeyId() -> String {
         return self.accessKeyId
     }
     
-    public func getAccessKeySecret() -> String {
+    public override func getAccessKeySecret() -> String {
         return self.accessKeySecret
     }
     
-    public func getSecurityToken() -> String {
+    public override func getSecurityToken() -> String {
         return self.securityToken
     }
     
-    public func getType() -> String {
-        return self.type
+    public override func getType() -> String {
+        return CredentialType.STS.rawValue
     }
 }

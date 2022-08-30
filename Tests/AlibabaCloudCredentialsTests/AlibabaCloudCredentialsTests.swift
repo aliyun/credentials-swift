@@ -20,10 +20,12 @@ final class AlibabaCloudCredentialsTests: XCTestCase {
 
         XCTAssertEqual(credential.getAccessKeyId(), "accessKeyId")
         XCTAssertEqual(credential.getAccessKeySecret(), "accessKeySecret")
+        XCTAssertEqual(credential.getType(), "access_key")
         let ak : String = try await client.getAccessKeyId()
         let secret : String = try await client.getAccessKeySecret()
         XCTAssertEqual(ak, "accessKeyId")
         XCTAssertEqual(secret, "accessKeySecret")
+        XCTAssertEqual(client.getType(), "access_key")
     }
     
     public func testStsCredential() async throws {
@@ -43,12 +45,14 @@ final class AlibabaCloudCredentialsTests: XCTestCase {
         XCTAssertEqual(credential.getAccessKeyId(), "accessKeyId")
         XCTAssertEqual(credential.getAccessKeySecret(), "accessKeySecret")
         XCTAssertEqual(credential.getSecurityToken(), "securityToken")
+        XCTAssertEqual(credential.getType(), "sts")
         let ak : String = try await client.getAccessKeyId()
         let secret : String = try await client.getAccessKeySecret()
         let token : String = try await client.getSecurityToken()
         XCTAssertEqual(ak, "accessKeyId")
         XCTAssertEqual(secret, "accessKeySecret")
         XCTAssertEqual(token, "securityToken")
+        XCTAssertEqual(client.getType(), "sts")
     }
 
     public func testBearerTokenCredential() async throws {
@@ -62,8 +66,10 @@ final class AlibabaCloudCredentialsTests: XCTestCase {
         let credential: BearerTokenCredential = try await client.getCredential() as! BearerTokenCredential
 
         XCTAssertEqual(credential.getBearerToken(), "bearerToken")
+        XCTAssertEqual(credential.getType(), "bearer")
         let token : String = try client.getBearerToken()
         XCTAssertEqual(token, "bearerToken")
+        XCTAssertEqual(client.getType(), "bearer")
     }
 
     public func testEcsRamRoleCredentialProvider() async throws {
@@ -82,9 +88,9 @@ final class AlibabaCloudCredentialsTests: XCTestCase {
         
         let credential: StsCredential = try await provider.getCredential() as! StsCredential
 
-        XCTAssertEqual(credential.getAccessKeyId(), cred.getAccessKeyId!())
-        XCTAssertEqual(credential.getAccessKeySecret(), cred.getAccessKeySecret!())
-        XCTAssertEqual(credential.getSecurityToken(), cred.getSecurityToken!())
+        XCTAssertEqual(credential.getAccessKeyId(), cred.getAccessKeyId())
+        XCTAssertEqual(credential.getAccessKeySecret(), cred.getAccessKeySecret())
+        XCTAssertEqual(credential.getSecurityToken(), cred.getSecurityToken())
     }
 
     public func testEcsRamRoleCredentialProviderRefresh() async throws {
