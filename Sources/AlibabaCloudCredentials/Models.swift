@@ -97,63 +97,64 @@ public class Config: Tea.TeaModel {
         return map
     }
     
-    public override func fromMap(_ dict: [String: Any]) -> Void {
-        if dict.keys.contains("type") {
-            self.type = dict["type"] as! String
+    public override func fromMap(_ dict: [String: Any?]?) -> Void {
+        guard let dict else { return }
+        if let value = dict["type"] as? String {
+            self.type = value
         }
-        if dict.keys.contains("accessKeyId") {
-            self.accessKeyId = dict["accessKeyId"] as! String
+        if let value = dict["accessKeyId"] as? String {
+            self.accessKeyId = value
         }
-        if dict.keys.contains("accessKeySecret") {
-            self.accessKeySecret = dict["accessKeySecret"] as! String
+        if let value = dict["accessKeySecret"] as? String {
+            self.accessKeySecret = value
         }
-        if dict.keys.contains("securityToken") {
-            self.securityToken = dict["securityToken"] as! String
+        if let value = dict["securityToken"] as? String {
+            self.securityToken = value
         }
-        if dict.keys.contains("roleArn") {
-            self.roleArn = dict["roleArn"] as! String
+        if let value = dict["roleArn"] as? String {
+            self.roleArn = value
         }
-        if dict.keys.contains("roleSessionName") {
-            self.roleSessionName = dict["roleSessionName"] as! String
+        if let value = dict["roleSessionName"] as? String {
+            self.roleSessionName = value
         }
-        if dict.keys.contains("privateKeySecret") {
-            self.privateKeySecret = dict["privateKeySecret"] as! String
+        if let value = dict["privateKeySecret"] as? String {
+            self.privateKeySecret = value
         }
-        if dict.keys.contains("publicKeyId") {
-            self.publicKeyId = dict["publicKeyId"] as! String
+        if let value = dict["publicKeyId"] as? String {
+            self.publicKeyId = value
         }
-        if dict.keys.contains("roleName") {
-            self.roleName = dict["roleName"] as! String
+        if let value = dict["roleName"] as? String {
+            self.roleName = value
         }
-        if dict.keys.contains("bearerToken") {
-            self.bearerToken = dict["bearerToken"] as! String
+        if let value = dict["bearerToken"] as? String {
+            self.bearerToken = value
         }
-        if dict.keys.contains("timeout") {
-            self.timeout = dict["timeout"] as! Int
+        if let value = dict["timeout"] as? Int {
+            self.timeout = value
         }
-        if dict.keys.contains("connectTimeout") {
-            self.connectTimeout = dict["connectTimeout"] as! Int
+        if let value = dict["connectTimeout"] as? Int {
+            self.connectTimeout = value
         }
-        if dict.keys.contains("proxy") {
-            self.proxy = dict["proxy"] as! String
+        if let value = dict["proxy"] as? String {
+            self.proxy = value
         }
-        if dict.keys.contains("policy") {
-            self.policy = dict["policy"] as! String
+        if let value = dict["policy"] as? String {
+            self.policy = value
         }
-        if dict.keys.contains("roleSessionExpiration") {
-            self.roleSessionExpiration = dict["roleSessionExpiration"] as! Int
+        if let value = dict["roleSessionExpiration"] as? Int {
+            self.roleSessionExpiration = value
         }
-        if dict.keys.contains("oidcProviderArn") {
-            self.oidcProviderArn = dict["oidcProviderArn"] as! String
+        if let value = dict["oidcProviderArn"] as? String {
+            self.oidcProviderArn = value
         }
-        if dict.keys.contains("oidcTokenFilePath") {
-            self.oidcTokenFilePath = dict["oidcTokenFilePath"] as! String
+        if let value = dict["oidcTokenFilePath"] as? String {
+            self.oidcTokenFilePath = value
         }
-        if dict.keys.contains("credentialsURI") {
-            self.credentialsURI = dict["credentialsURI"] as! String
+        if let value = dict["credentialsURI"] as? String {
+            self.credentialsURI = value
         }
-        if dict.keys.contains("regionId") {
-            self.regionId = dict["regionId"] as! String
+        if let value = dict["regionId"] as? String {
+            self.regionId = value
         }
     }
 }
