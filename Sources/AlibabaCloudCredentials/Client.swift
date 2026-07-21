@@ -25,6 +25,8 @@ open class Client {
             return try await RamRoleArnCredentialProvider(config: self.config).getCredential()
         case CredentialType.RsaKeyPair.rawValue:
             return try await RsaKeyPairCredentialProvider(config: self.config).getCredential()
+        case CredentialType.OIDCRoleArn.rawValue:
+            return try await OIDCRoleArnCredentialProvider(config: self.config).getCredential()
         case CredentialType.URLSTS.rawValue:
             return try await URICredentialProvider(config: self.config).getCredential()
         default:

@@ -275,3 +275,154 @@ open class URICredentialProvider: CredentialsProvider {
         }
     }
 }
+
+/// OIDC Role ARN credentials via STS AssumeRoleWithOIDC.
+open class OIDCRoleArnCredentialProvider: CredentialsProvider {
+    private let roleArn: String
+    private let oidcProviderArn: String
+    private let oidcTokenFilePath: String
+    private let roleSessionName: String
+    private let durationSeconds: Int
+    private let policy: String
+    private let stsHost: String
+    private let connectionTimeout: Int
+    private let readTimeout: Int
+
+    public init(config: Config) throws {
+        let env = ProcessInfo.processInfo.environment
+        let roleArn = (config.roleArn?.isEmpty == false ? config.roleArn : nil)
+            ?? env["ALIBABA_CLOUD_ROLE_ARN"]
+            ?? ""
+        let oidcProviderArn = (config.oidcProviderArn?.isEmpty == false ? config.oidcProviderArn : nil)
+            ?? env["ALIBABA_CLOUD_OIDC_PROVIDER_ARN"]
+            ?? ""
+        let oidcTokenFilePath = (config.oidcTokenFilePath?.isEmpty == false ? config.oidcTokenFilePath : nil)
+            ?? env["ALIBABA_CLOUD_OIDC_TOKEN_FILE"]
+            ?? ""
+        let roleSessionName = (config.roleSessionName?.isEmpty == false ? config.roleSessionName : nil)
+            ?? env["ALIBABA_CLOUD_ROLE_SESSION_NAME"]
+            ?? "credentials-swift-\(Int(Date().timeIntervalSince1970))"
+        let durationSeconds = config.roleSessionExpiration ?? 3600
+
+        if roleArn.isEmpty {
+            throw CredentialException.EmptyOrNil(
+                "roleArn or environment variable ALIBABA_CLOUD_ROLE_ARN cannot be empty."
+            )
+        }
+        if oidcProviderArn.isEmpty {
+            throw CredentialException.EmptyOrNil(
+                "oidcProviderArn or environment variable ALIBABA_CLOUD_OIDC_PROVIDER_ARN cannot be empty."
+            )
+        }
+        if oidcTokenFilePath.isEmpty {
+            throw CredentialException.EmptyOrNil(
+                "oidcTokenFilePath or environment variable ALIBABA_CLOUD_OIDC_TOKEN_FILE cannot be empty."
+            )
+        }
+        if durationSeconds < 900 {
+            throw CredentialException.InvalidData(
+                "session duration should be in the range of 900s - max session duration"
+            )
+        }
+
+        self.roleArn = roleArn
+        self.oidcProviderArn = oidcProviderArn
+        self.oidcTokenFilePath = oidcTokenFilePath
+        self.roleSessionName = roleSessionName
+        self.durationSeconds = durationSeconds
+        self.policy = config.policy ?? ""
+        self.connectionTimeout = config.connectTimeout ?? 5000
+        self.readTimeout = config.timeout ?? 10000
+        self.stsHost = OIDCRoleArnCredentialProvider.resolveStsHost(config: config, env: env)
+    }
+
+    static func resolveStsHost(config: Config, env: [String: String] = ProcessInfo.processInfo.environment) -> String {
+        if let host = config.host, !host.isEmpty {
+            return host
+        }
+        let region = (config.regionId?.isEmpty == false ? config.regionId : nil)
+            ?? (env["ALIBABA_CLOUD_STS_REGION"]?.isEmpty == false ? env["ALIBABA_CLOUD_STS_REGION"] : nil)
+        if let region, !region.isEmpty {
+            return "sts.\(region).aliyuncs.com"
+        }
+        return "sts.aliyuncs.com"
+    }
+
+    func readOIDCToken() throws -> String {
+        do {
+            return try String(contentsOfFile: oidcTokenFilePath, encoding: .utf8)
+        } catch {
+            throw CredentialException.InvalidData(
+                "Failed to read OIDC token file: \(oidcTokenFilePath)"
+            )
+        }
+    }
+
+    func buildAssumeRoleWithOIDCRequest(token: String) -> Tea.TeaRequest {
+        let request = Tea.TeaRequest()
+        request.protocol_ = "https"
+        request.method = "POST"
+        request.pathname = "/"
+        request.headers = [
+            "host": stsHost,
+            "user-agent": getDefaultUserAgent(),
+            "content-type": "application/x-www-form-urlencoded"
+        ]
+        request.query = [
+            "Action": "AssumeRoleWithOIDC",
+            "Format": "JSON",
+            "Version": "2015-04-01",
+            "Timestamp": Date().toString(format: DateFormat)
+        ]
+        var bodyForm: [String: Any] = [
+            "RoleArn": roleArn,
+            "OIDCProviderArn": oidcProviderArn,
+            "OIDCToken": token,
+            "RoleSessionName": roleSessionName,
+            "DurationSeconds": durationSeconds.toString()
+        ]
+        if !policy.isEmpty {
+            bodyForm["Policy"] = policy
+        }
+        let formBody = httpQueryString(query: bodyForm)
+        request.body = InputStream(data: Data(formBody.utf8))
+        return request
+    }
+
+    func parseOIDCCredentials(from result: [String: AnyObject]) throws -> StsCredential {
+        guard let credentials = result["Credentials"] as? [String: Any] else {
+            throw CredentialException.RequestError(result)
+        }
+        guard let ak = credentials["AccessKeyId"] as? String,
+              let secret = credentials["AccessKeySecret"] as? String,
+              let token = credentials["SecurityToken"] as? String,
+              let expiration = credentials["Expiration"] as? String,
+              !ak.isEmpty, !secret.isEmpty, !token.isEmpty else {
+            throw CredentialException.RequestError(result)
+        }
+        self.expiration = expiration.convertToDate(format: DateFormat).toTimestamp()
+        return try StsCredential(ak, secret, token)
+    }
+
+    func processOIDCResponse(statusCode: Int32, body: Data?) throws -> Credential {
+        let content = String(data: body ?? Data(), encoding: .utf8) ?? "{}"
+        if statusCode != 200 {
+            throw CredentialException.InvalidData(
+                "error refreshing credentials from oidc_role_arn, http_code: \(statusCode), result: \(content)"
+            )
+        }
+        let result: [String: AnyObject] = content.jsonDecode()
+        return try parseOIDCCredentials(from: result)
+    }
+
+    override func refreshCredential() async throws -> Credential {
+        let token = try readOIDCToken()
+        let request = buildAssumeRoleWithOIDCRequest(token: token)
+        let runtime: [String: Any] = [
+            "connectTimeout": connectionTimeout,
+            "readTimeout": readTimeout
+        ]
+        let response = try await Tea.TeaCore.doAction(request, runtime)
+        return try processOIDCResponse(statusCode: response.statusCode, body: response.body)
+    }
+}
