@@ -129,6 +129,9 @@ public class Config: Tea.TeaModel {
         if let value = dict["bearerToken"] as? String {
             self.bearerToken = value
         }
+        if let value = dict["host"] as? String {
+            self.host = value
+        }
         if let value = dict["timeout"] as? Int {
             self.timeout = value
         }
