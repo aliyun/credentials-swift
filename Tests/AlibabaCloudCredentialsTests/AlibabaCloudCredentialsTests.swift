@@ -194,6 +194,16 @@ final class AlibabaCloudCredentialsTests: XCTestCase {
 //        XCTAssertEqual(code, "InvalidAccessKeyId.NotFound")
 //    }
 
+    public func testHasExpiredStaleWindow() {
+        let now = Date().timeIntervalSince1970
+        // Within 15 minutes → expired/stale
+        XCTAssertTrue(hasExpired(expiration: now + 100))
+        XCTAssertTrue(hasExpired(expiration: now + 15 * 60))
+        // Beyond 15 minutes → still fresh
+        XCTAssertFalse(hasExpired(expiration: now + 15 * 60 + 1))
+        XCTAssertFalse(hasExpired(expiration: now + 10000))
+    }
+
     public func testConvertToDate() {
         let date: Date = Date()
         let dateString: String = date.toString()
