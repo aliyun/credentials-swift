@@ -7,7 +7,8 @@ open class CredentialsProvider : NSObject {
     var expiration: TimeInterval?
 
     func shouldRefresh() -> Bool {
-        Double(expiration ?? 0) - Double(Date().timeIntervalSince1970) <= 180
+        // Align with Python/Java/Node session stale window: refresh 15 minutes before expiration.
+        Double(expiration ?? 0) - Double(Date().timeIntervalSince1970) <= 15 * 60
     }
 
     public func getCredential() async throws -> Credential? {
