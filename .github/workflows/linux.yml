@@ -1,0 +1,19 @@
+name: Linux
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        swift: ['5.10', '6.1']
+    container: swift:${{ matrix.swift }}-jammy
+    steps:
+      - uses: actions/checkout@v4
+      - run: swift test
