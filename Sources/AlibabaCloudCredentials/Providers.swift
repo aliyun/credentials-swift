@@ -153,7 +153,7 @@ open class RamRoleArnCredentialProvider: CredentialsProvider {
             let credentials: [String: String] = result["Credentials"] as! [String: String]
             let ak: String = credentials["AccessKeyId"] as! String
             let secret: String = credentials["AccessKeySecret"] as! String
-            let token: String = result["SecurityToken"] as! String
+            let token: String = credentials["SecurityToken"] as! String
             let expiration: String = credentials["Expiration"] as! String
             super.expiration = expiration.convertToDate(format: DateFormat).toTimestamp()
             let credential : StsCredential = try StsCredential(ak, secret, token)
