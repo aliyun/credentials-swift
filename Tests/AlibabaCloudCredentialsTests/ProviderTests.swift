@@ -334,10 +334,10 @@ final class ProviderTests: XCTestCase {
         }
     }
 
-    func testEcsEmptyRoleDiscoveryAndServiceError() async throws {
+    func testEcsRoleDiscoveryAndServiceError() async throws {
         let fixture = try ProviderFixture()
         let provider = try EcsRamRoleCredentialProvider(config: Config())
-        fixture.reset([response(""), response(#"{"Code":"Denied","Message":"unavailable"}"#)])
+        fixture.reset([response("discovered-role"), response(#"{"Code":"Denied","Message":"unavailable"}"#)])
         do {
             _ = try await provider.getCredential()
             XCTFail("Expected metadata service error")
@@ -347,8 +347,22 @@ final class ProviderTests: XCTestCase {
         }
         let requests = fixture.requests()
         XCTAssertEqual(requests.map { $0.pathname }, [
-            "/latest/meta-data/ram/security-credentials/", "/latest/meta-data/ram/security-credentials/"
+            "/latest/meta-data/ram/security-credentials/",
+            "/latest/meta-data/ram/security-credentials/discovered-role"
         ])
+    }
+
+    func testEcsEmptyRoleDiscoveryReportsTransportError() async throws {
+        let fixture = try ProviderFixture()
+        let provider = try EcsRamRoleCredentialProvider(config: Config())
+        fixture.reset([response("")])
+        do {
+            _ = try await provider.getCredential()
+            XCTFail("Expected Tea to reject an empty HTTP 200 response")
+        } catch {
+            XCTAssertTrue(error is RetryableError, "Unexpected error: \(error)")
+        }
+        XCTAssertEqual(fixture.requests().map { $0.pathname }, ["/latest/meta-data/ram/security-credentials/"])
     }
 
     func testRamRoleArnRejectsMissingAccessKeyFields() {
