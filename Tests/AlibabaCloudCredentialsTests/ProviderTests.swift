@@ -1,4 +1,7 @@
 import Foundation
+#if canImport(ObjectiveC)
+import ObjectiveC
+#endif
 #if canImport(FoundationNetworking)
 import FoundationNetworking
 #endif
@@ -31,8 +34,11 @@ final class ProviderMockURLProtocol: URLProtocol {
     private static var capturedRequests: [CapturedRequest] = []
     private static var requiresExpectedResponse = false
     private static let registration: Void = {
-        #if !os(Linux)
-        XCTAssertTrue(URLProtocol.registerClass(ProviderMockURLProtocol.self))
+        #if canImport(ObjectiveC)
+        // Tea uses Alamofire's shared session, so inject the mock into its default configuration before initialization.
+        let original = class_getClassMethod(URLSessionConfiguration.self, #selector(getter: URLSessionConfiguration.default))!
+        let replacement = class_getClassMethod(URLSessionConfiguration.self, #selector(URLSessionConfiguration.credentialsTestDefaultConfiguration))!
+        method_exchangeImplementations(original, replacement)
         #endif
     }()
 
@@ -134,6 +140,16 @@ final class ProviderMockURLProtocol: URLProtocol {
 
     override func stopLoading() {}
 }
+
+#if canImport(ObjectiveC)
+private extension URLSessionConfiguration {
+    @objc dynamic class func credentialsTestDefaultConfiguration() -> URLSessionConfiguration {
+        let configuration = credentialsTestDefaultConfiguration()
+        configuration.protocolClasses = [ProviderMockURLProtocol.self] + (configuration.protocolClasses ?? [])
+        return configuration
+    }
+}
+#endif
 
 private struct ProviderFixture {
     let tlsHost = "sts.fixture.invalid"
