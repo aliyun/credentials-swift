@@ -6,6 +6,7 @@ final class AlibabaCloudCredentialsTests: XCTestCase {
 
     override func setUp() {
         super.setUp()
+        ProviderMockURLProtocol.register()
         unsetenv("ALIBABA_CLOUD_ROLE_ARN")
         unsetenv("ALIBABA_CLOUD_OIDC_PROVIDER_ARN")
         unsetenv("ALIBABA_CLOUD_OIDC_TOKEN_FILE")
