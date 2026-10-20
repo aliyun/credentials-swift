@@ -6,6 +6,7 @@ final class AlibabaCloudCredentialsTests: XCTestCase {
 
     override func setUp() {
         super.setUp()
+        ProviderMockURLProtocol.register()
         unsetenv("ALIBABA_CLOUD_ROLE_ARN")
         unsetenv("ALIBABA_CLOUD_OIDC_PROVIDER_ARN")
         unsetenv("ALIBABA_CLOUD_OIDC_TOKEN_FILE")
@@ -542,26 +543,4 @@ final class AlibabaCloudCredentialsTests: XCTestCase {
         }
     }
 
-    static var allTests = [
-        ("testAKCredentials", testAKCredentials),
-        ("testBearerTokenCredential", testBearerTokenCredential),
-        ("testStsCredential", testStsCredential),
-        ("testEcsRamRoleCredentialProvider", testEcsRamRoleCredentialProvider),
-        ("testEcsRamRoleCredentialProviderRefresh", testEcsRamRoleCredentialProviderRefresh),
-        ("testOIDCRoleArnProviderMissingRoleArn", testOIDCRoleArnProviderMissingRoleArn),
-        ("testOIDCRoleArnProviderMissingProviderArn", testOIDCRoleArnProviderMissingProviderArn),
-        ("testOIDCRoleArnProviderMissingTokenFile", testOIDCRoleArnProviderMissingTokenFile),
-        ("testOIDCRoleArnProviderDurationTooShort", testOIDCRoleArnProviderDurationTooShort),
-        ("testOIDCRoleArnResolveStsHost", testOIDCRoleArnResolveStsHost),
-        ("testOIDCRoleArnProviderCachedCredential", testOIDCRoleArnProviderCachedCredential),
-        ("testOIDCRoleArnReadTokenAndBuildRequest", testOIDCRoleArnReadTokenAndBuildRequest),
-        ("testOIDCRoleArnReadTokenMissingFile", testOIDCRoleArnReadTokenMissingFile),
-        ("testOIDCRoleArnParseCredentials", testOIDCRoleArnParseCredentials),
-        ("testOIDCRoleArnParseCredentialsMissingFields", testOIDCRoleArnParseCredentialsMissingFields),
-        ("testOIDCRoleArnClientUsesProvider", testOIDCRoleArnClientUsesProvider),
-        ("testOIDCRoleArnProviderRefreshFailure", testOIDCRoleArnProviderRefreshFailure),
-        ("testOIDCRoleArnProcessResponseSuccess", testOIDCRoleArnProcessResponseSuccess),
-        ("testOIDCRoleArnProcessResponseHttpError", testOIDCRoleArnProcessResponseHttpError),
-        ("testOIDCRoleArnProcessResponseNilBody", testOIDCRoleArnProcessResponseNilBody),
-    ]
 }
