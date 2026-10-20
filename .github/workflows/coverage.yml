@@ -29,6 +29,17 @@ jobs:
             .build/debug/AlibabaCloudCredentialsPackageTests.xctest/Contents/MacOS/AlibabaCloudCredentialsPackageTests \
             -instr-profile=.build/debug/codecov/default.profdata \
             -format=lcov Sources/AlibabaCloudCredentials/*.swift > coverage.lcov
+      - name: Require 90 percent source coverage
+        run: |
+          awk -F: '
+            /^LF:/ { total += $2 }
+            /^LH:/ { covered += $2 }
+            END {
+              if (total == 0) { print "No production coverage found"; exit 1 }
+              printf "Production line coverage: %.2f%% (%d/%d)\n", 100 * covered / total, covered, total
+              exit (covered * 100 < total * 90)
+            }
+          ' coverage.lcov
       - name: Upload code coverage report
         uses: codecov/codecov-action@v5
         with:
