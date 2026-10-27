@@ -318,7 +318,7 @@ final class AlibabaCloudCredentialsTests: XCTestCase {
         XCTAssertEqual(credential.getType(), "sts")
     }
 
-    public func testOIDCRoleArnReadTokenAndBuildRequest() throws {
+    public func testOIDCRoleArnReadTokenAndBuildRequest() async throws {
         let tokenFile = FileManager.default.temporaryDirectory
             .appendingPathComponent("oidc-token-\(UUID().uuidString)")
         try "oidc-jwt-token".write(to: tokenFile, atomically: true, encoding: .utf8)
@@ -334,7 +334,7 @@ final class AlibabaCloudCredentialsTests: XCTestCase {
             "regionId": "cn-hangzhou"
         ])
         let provider = try OIDCRoleArnCredentialProvider(config: config)
-        let token = try provider.readOIDCToken()
+        let token = try await provider.readOIDCToken()
         XCTAssertEqual(token, "oidc-jwt-token")
 
         let request = provider.buildAssumeRoleWithOIDCRequest(token: token)
@@ -347,7 +347,7 @@ final class AlibabaCloudCredentialsTests: XCTestCase {
         XCTAssertNotNil(request.body)
     }
 
-    public func testOIDCRoleArnReadTokenMissingFile() throws {
+    public func testOIDCRoleArnReadTokenMissingFile() async throws {
         let config = Config([
             "type": "oidc_role_arn",
             "roleArn": "acs:ram::123:role/test",
@@ -355,11 +355,14 @@ final class AlibabaCloudCredentialsTests: XCTestCase {
             "oidcTokenFilePath": "/tmp/nonexistent-oidc-token-\(UUID().uuidString)"
         ])
         let provider = try OIDCRoleArnCredentialProvider(config: config)
-        XCTAssertThrowsError(try provider.readOIDCToken()) { error in
+        do {
+            _ = try await provider.readOIDCToken()
+            XCTFail("expected InvalidData")
+        } catch {
             guard case CredentialException.InvalidData(let msg) = error else {
                 return XCTFail("expected InvalidData")
             }
-            XCTAssertTrue(msg.contains("Failed to read OIDC token file"))
+            XCTAssertEqual(msg, "Failed to read OIDC token file: \(config.oidcTokenFilePath!)")
         }
     }
 

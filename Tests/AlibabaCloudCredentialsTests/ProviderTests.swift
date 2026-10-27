@@ -384,10 +384,7 @@ final class ProviderTests: XCTestCase {
             "roleArn": "role", "regionId": "cn-beijing", "roleSessionName": "custom-session",
             "roleSessionExpiration": 1800, "policy": "policy-json", "connectTimeout": 5000, "timeout": 10000
         ]))
-        // Retain the top-level token field for the master parser.
-        fixture.reset([response("""
-            {"SecurityToken":"token","Credentials":{"AccessKeyId":"id","AccessKeySecret":"secret","SecurityToken":"token","Expiration":"\(expiration)"}}
-            """)])
+        fixture.reset([response(nestedSessionJSON)])
         let credential = try await provider.getCredential()
         assertSession(credential)
         XCTAssertEqual(provider.expiration, expiration.convertToDate().timeIntervalSince1970)

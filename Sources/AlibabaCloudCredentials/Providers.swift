@@ -1,4 +1,5 @@
 import Foundation
+import Dispatch
 import Tea
 
 open class CredentialsProvider : NSObject {
@@ -152,7 +153,7 @@ open class RamRoleArnCredentialProvider: CredentialsProvider {
             let credentials: [String: String] = result["Credentials"] as! [String: String]
             let ak: String = credentials["AccessKeyId"] as! String
             let secret: String = credentials["AccessKeySecret"] as! String
-            let token: String = result["SecurityToken"] as! String
+            let token: String = credentials["SecurityToken"] as! String
             let expiration: String = credentials["Expiration"] as! String
             super.expiration = expiration.convertToDate(format: DateFormat).toTimestamp()
             let credential : StsCredential = try StsCredential(ak, secret, token)
@@ -348,13 +349,19 @@ open class OIDCRoleArnCredentialProvider: CredentialsProvider {
         return "sts.aliyuncs.com"
     }
 
-    func readOIDCToken() throws -> String {
-        do {
-            return try String(contentsOfFile: oidcTokenFilePath, encoding: .utf8)
-        } catch {
-            throw CredentialException.InvalidData(
-                "Failed to read OIDC token file: \(oidcTokenFilePath)"
-            )
+    func readOIDCToken() async throws -> String {
+        let path = oidcTokenFilePath
+        return try await withCheckedThrowingContinuation { continuation in
+            // File I/O must not block Swift's cooperative executor.
+            DispatchQueue.global(qos: .utility).async {
+                do {
+                    continuation.resume(returning: try String(contentsOfFile: path, encoding: .utf8))
+                } catch {
+                    continuation.resume(throwing: CredentialException.InvalidData(
+                        "Failed to read OIDC token file: \(path)"
+                    ))
+                }
+            }
         }
     }
 
@@ -416,7 +423,7 @@ open class OIDCRoleArnCredentialProvider: CredentialsProvider {
     }
 
     override func refreshCredential() async throws -> Credential {
-        let token = try readOIDCToken()
+        let token = try await readOIDCToken()
         let request = buildAssumeRoleWithOIDCRequest(token: token)
         let runtime: [String: Any] = [
             "connectTimeout": connectionTimeout,
