@@ -9,7 +9,8 @@ func dateFormatter(format: String = "yyyy-MM-dd'T'HH:mm:ss'Z'") -> DateFormatter
 }
 
 func hasExpired(expiration: TimeInterval) -> Bool {
-    Double(expiration) - Double(Date().timeIntervalSince1970) <= 180
+    // Align with Python/Java/Node session stale window: refresh 15 minutes before expiration.
+    Double(expiration) - Double(Date().timeIntervalSince1970) <= 15 * 60
 }
 
 func composeUrl(host: String, params: [String: Any], pathname: String = "", schema: String = "https", port: String = "80") -> String {
