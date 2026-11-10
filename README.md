@@ -64,3 +64,13 @@ Detailed changes for each release are documented in the [release notes](./Change
 [Apache-2.0](http://www.apache.org/licenses/LICENSE-2.0)
 
 Copyright (c) 2009-present, Alibaba Cloud All rights reserved.
+
+### Alibaba Cloud CLI CloudSSO profiles
+
+After signing in with Alibaba Cloud CLI, construct a credentials client with
+`Client(profileName: "dev")` and pass it as the OpenAPI client's credential.
+`Client()` uses the profile selected by `ALIBABA_CLOUD_PROFILE` or the CLI
+configuration's current profile. If CLI was configured with `--config-path`,
+pass that same file with `Client(profileName: "dev", configFile: "/path/config.json")`.
+The client supports CloudSSO profiles with either inline login state or a
+shared `sso_session`. Sign in again with CLI if the session has expired.
