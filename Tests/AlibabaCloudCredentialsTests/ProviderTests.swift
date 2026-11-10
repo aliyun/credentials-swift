@@ -203,6 +203,43 @@ final class ProviderTests: XCTestCase {
         .http(body, status: status)
     }
 
+    func testCloudSSOExchangeAndCache() async throws {
+        let fixture = try ProviderFixture()
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: root) }
+        let config = root.appendingPathComponent("custom.json")
+        let defaultConfig = URL(fileURLWithPath: NSHomeDirectory()).appendingPathComponent(".aliyun/config.json")
+        let session = try CloudSSOProfileProvider.sessionFile(config: config, defaults: defaultConfig, name: "company")
+        try FileManager.default.createDirectory(at: session.deletingLastPathComponent(), withIntermediateDirectories: true)
+        let profile = #"{"name":"dev","mode":"CloudSSO","cloud_sso_account_id":"account","cloud_sso_access_config":"role""#
+        try Data(("{\"current\":\"dev\",\"profiles\":[" + profile + #","sso_session":"company"}]}"#).utf8).write(to: config)
+        try Data(#"{"name":"company","sign_in_url":"https://sts.fixture.invalid/signin","access_token":"shared","expires_at":4102444800}"#.utf8).write(to: session)
+        fixture.reset([response(#"{"CloudCredential":{"AccessKeyId":"ak","AccessKeySecret":"sk","SecurityToken":"sts","Expiration":"2099-01-01T00:00:00Z"}}"#)])
+        let client = Client(profileName: "dev", configFile: config.path)
+        let first = try await client.getCredential()
+        let second = try await client.getCredential()
+        XCTAssertEqual(first?.getAccessKeyId(), "ak")
+        XCTAssertEqual(second?.getSecurityToken(), "sts")
+        XCTAssertEqual(fixture.requests().count, 1)
+        let request = try XCTUnwrap(fixture.requests().first)
+        XCTAssertEqual(request.method, "POST")
+        XCTAssertEqual(request.pathname, "/cloud-credentials")
+        XCTAssertEqual(request.headers["authorization"], "Bearer shared")
+        let body = try JSONDecoder().decode([String: String].self, from: Data(request.body.utf8))
+        XCTAssertEqual(body, ["AccountId": "account", "AccessConfigurationId": "role"])
+
+        try Data(("{\"current\":\"dev\",\"profiles\":[" + profile + #","cloud_sso_sign_in_url":"https://sts.fixture.invalid/signin","access_token":"inline","cloud_sso_access_token_expire":4102444800}]}"#).utf8).write(to: config)
+        fixture.reset([response("{}", status: 403)])
+        do {
+            _ = try await Client(profileName: "dev", configFile: config.path).getCredential()
+            XCTFail("Expected a failed exchange to be rejected")
+        } catch CredentialException.InvalidData(let message) {
+            XCTAssertEqual(message, "Invalid CloudSSO credential response.")
+        }
+        XCTAssertEqual(fixture.requests().first?.headers["authorization"], "Bearer inline")
+    }
+
     private var sessionJSON: String {
         """
         {"Code":"Success","AccessKeyId":"id","AccessKeySecret":"secret","SecurityToken":"token","Expiration":"\(expiration)"}
