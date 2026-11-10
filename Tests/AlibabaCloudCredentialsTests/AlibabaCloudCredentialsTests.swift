@@ -14,6 +14,26 @@ final class AlibabaCloudCredentialsTests: XCTestCase {
         unsetenv("ALIBABA_CLOUD_STS_REGION")
     }
 
+    func testSharedCloudSSOSessionNamespaceAndMissingFile() async throws {
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: root) }
+        let config = root.appendingPathComponent("custom.json")
+        try Data(#"{"current":"dev","profiles":[{"name":"dev","mode":"CloudSSO","sso_session":"company","cloud_sso_account_id":"account","cloud_sso_access_config":"role"}]}"#.utf8).write(to: config)
+        let defaults = root.appendingPathComponent("config.json")
+        let defaultSession = try CloudSSOProfileProvider.sessionFile(config: config, defaults: config, name: "company")
+        XCTAssertEqual(defaultSession.deletingLastPathComponent().lastPathComponent, "sso")
+        let customSession = try CloudSSOProfileProvider.sessionFile(config: config, defaults: defaults, name: "company")
+        XCTAssertEqual(customSession.deletingLastPathComponent().lastPathComponent.count, 64)
+        XCTAssertThrowsError(try CloudSSOProfileProvider.sessionFile(config: config, defaults: defaults, name: "../company"))
+        do {
+            _ = try await Client(profileName: "dev", configFile: config.path).getCredential()
+            XCTFail("Expected the missing session to be rejected")
+        } catch CredentialException.InvalidData(let message) {
+            XCTAssertTrue(message.contains("Unable to read CloudSSO"))
+        }
+    }
+
     public func testAKCredentials() async throws {
         let config: Config = Config([
             "accessKeyId": "accessKeyId",

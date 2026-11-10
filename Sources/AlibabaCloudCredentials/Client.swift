@@ -3,14 +3,25 @@ import Foundation
 open class Client {
     private var credential: Credential?
     private var config: Config
+    private let cloudSSOProvider: CloudSSOProfileProvider?
     public var _headers: [String: String]?
 
     public init(_ config: Config) {
         self.config = config
+        self.cloudSSOProvider = config.type == "cli_profile"
+            ? CloudSSOProfileProvider(profileName: nil, configFile: nil) : nil
         self.credential = initCredential()
     }
 
+    public init(profileName: String? = nil, configFile: String? = nil) {
+        self.config = Config(["type": "cli_profile"])
+        self.cloudSSOProvider = CloudSSOProfileProvider(profileName: profileName, configFile: configFile)
+    }
+
     public func getCredential() async throws -> Credential? {
+        if let provider = cloudSSOProvider {
+            return try await provider.getCredential()
+        }
         let credentialsType: String = self.config.type!
         switch (credentialsType) {
         case CredentialType.AccessKey.rawValue:
